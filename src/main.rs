@@ -1,9 +1,12 @@
 mod services;
 
 use std::{ascii, fs};
+use std::process::exit;
 use clap::Parser;
 use image::{open, DynamicImage, ImageError};
 use crate::services::img_to_ascii;
+use owo_colors::{OwoColorize, Rgb};
+use crate::services::img_to_ascii::{img_to_colored_ascii, Color};
 
 #[derive(Parser)]
 #[command(name = "img-ascii")]
@@ -26,6 +29,9 @@ struct Cli {
 
     #[arg(long, default_value = "80")]
     width: u32,
+
+    #[arg(long, default_value = "false")]
+    color: String
 }
 
 fn main() {
@@ -39,24 +45,44 @@ fn main() {
         }
     };
 
-    let ascii_lines = img_to_ascii(&img, args.width, &args.style);
 
 
     match args.output.as_str() {
         "console" => {
-            for ascii_line in ascii_lines {
-                println!("{}",ascii_line);
+            match args.color.as_str() {
+                "true" => print_colored_ascii_lines(&img_to_colored_ascii(&img, args.width, &args.style)),
+                _ => print_ascii_lines(&img_to_ascii(&img, args.width, &args.style)),
             }
+
         },
         "file" => {
+            let ascii_lines = img_to_ascii(&img, args.width, &args.style);
+
             fs::write(args.name, ascii_lines.join("\n"))
                 .unwrap_or_else(|e| eprintln!("Erreur: {}", e))
         },
         _ => {
+            let ascii_lines = img_to_ascii(&img, args.width, &args.style, );
+
             for ascii_line in ascii_lines {
                 println!("{}",ascii_line);
             }
         }
+    }
+}
+
+fn print_colored_ascii_lines(colored_lines: &Vec<Vec<(Color, char)>>) {
+    for line in colored_lines {
+        for (color, ch) in line {
+            let rgb = Rgb(color.r, color.g, color.b);
+            print!("{}", ch.color(rgb));
+        }
+        println!();
+    }
+}
+fn print_ascii_lines(ascii_lines: &Vec<String>) {
+    for line in ascii_lines {
+        println!("{}", line);
     }
 }
 

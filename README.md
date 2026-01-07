@@ -1,3 +1,5 @@
+![License](https://img.shields.io/badge/License-Bastien--mrq-orange)
+![Version](https://img.shields.io/badge/Version-2.0.0-orange)
 # img-to-ascii
 
 A Rust command-line tool that converts images to ASCII art with multiple output styles and configurable dimensions.
@@ -9,6 +11,7 @@ A Rust command-line tool that converts images to ASCII art with multiple output 
 - Configurable output width
 - Console or file output
 - Maintains aspect ratio with character scaling adjustment
+- Console output in color
 
 ## Installation
 
@@ -32,7 +35,7 @@ cargo run -- input.jpg
 
 ### Advanced options
 ```bash
-cargo run -- input.jpg --output file --name output.txt --style detailed --width 120
+cargo run -- input.jpg --output=file --name=output.txt --style=detailed --width=120 --color=true
 ```
 
 ### Command-line arguments
@@ -42,6 +45,7 @@ cargo run -- input.jpg --output file --name output.txt --style detailed --width 
 - `--name` - Output filename when using file output (default: "name")
 - `--style` - ASCII art style (default: "style")
 - `--width` - Output width in characters (default: 80)
+- `--color`- Show the art in color (default: false)
 
 ### ASCII Art Styles
 

@@ -1,23 +1,42 @@
-use std::ops::Deref;
-use image::{open, DynamicImage, ImageError};
+use image::DynamicImage;
 use image::imageops::FilterType;
 
 pub fn img_to_ascii(img: &DynamicImage, width: u32, style: &str) -> Vec<String>{
-    let gray_pixels= img_to_gray_pixels(img, width);
+    const CHAR_RATIO: f32 = 0.45;
+    let aspect_ratio = img.height() as f32 / img.width() as f32;
+    let calculated_height =
+        (width as f32 * aspect_ratio * CHAR_RATIO)
+            .round().max(1.0) as u32;
+
+
+    let gray_pixels= img_to_gray_pixels(img, width, calculated_height);
     pixels_to_ascii_lines(&gray_pixels, style)
 }
-fn img_to_gray_pixels(img: &DynamicImage, target_width: u32) -> Vec<Vec<u8>> {
+
+pub fn img_to_colored_ascii(img: &DynamicImage, width: u32, style: &str) -> Vec<Vec<(Color, char)>> {
     const CHAR_RATIO: f32 = 0.45;
-
     let aspect_ratio = img.height() as f32 / img.width() as f32;
-
     let calculated_height =
-        (target_width as f32 * aspect_ratio * CHAR_RATIO)
+        (width as f32 * aspect_ratio * CHAR_RATIO)
             .round().max(1.0) as u32;
 
     let resized_img = img.resize_exact(
-        target_width,
+        width,
         calculated_height,
+        FilterType::Lanczos3,
+    );
+
+    let gray_pixels= img_to_gray_pixels(img, width, calculated_height);
+
+    let color_pixels = image_to_colorscale(&resized_img);
+    colored_pixels_to_ascii_lines(&gray_pixels,&color_pixels, style)
+}
+
+fn img_to_gray_pixels(img: &DynamicImage, target_width: u32, target_height: u32) -> Vec<Vec<u8>> {
+
+    let resized_img = img.resize_exact(
+        target_width,
+        target_height,
         FilterType::Lanczos3,
     );
 
@@ -37,6 +56,28 @@ fn pixels_to_ascii_lines( pixels: &Vec<Vec<u8>>, style: &str) -> Vec<String> {
 
     ascii_lines
 }
+fn colored_pixels_to_ascii_lines(
+    pixels: &Vec<Vec<u8>>,
+    color_pixels: &Vec<Vec<Color>>,
+    style: &str
+) -> Vec<Vec<(Color, char)>> {
+    let mut result = Vec::new();
+
+    for y in 0..pixels.len() {
+        let mut line = Vec::new();
+
+        for x in 0..pixels[y].len() {
+            let color = color_pixels[y][x];
+            let ascii_char = brightness_to_ascii(pixels[y][x], style);
+
+            line.push((color, ascii_char));
+        }
+
+        result.push(line);
+    }
+
+    result
+}
 fn image_to_grayscale(img: &DynamicImage) -> Vec<Vec<u8>> {
     let gray_img = img.to_luma8();
     let (width, height) = gray_img.dimensions();
@@ -48,6 +89,23 @@ fn image_to_grayscale(img: &DynamicImage) -> Vec<Vec<u8>> {
         for x in 0..width {
             let pixel = gray_img.get_pixel(x, y);
             row.push(pixel[0]);
+        }
+        pixels.push(row);
+    }
+
+    pixels
+}
+fn image_to_colorscale(img: &DynamicImage) -> Vec<Vec<Color>> {
+    let rgb_img = img.to_rgb8();
+    let (width, height) = rgb_img.dimensions();
+
+    let mut pixels = Vec::new();
+
+    for y in 0..height {
+        let mut row = Vec::new();
+        for x in 0..width {
+            let pixel = rgb_img.get_pixel(x, y);
+            row.push(Color::new(pixel[0], pixel[1], pixel[2]));
         }
         pixels.push(row);
     }
@@ -68,4 +126,16 @@ fn brightness_to_ascii(brightness: u8, style: &str) -> char {
 
     let index = (brightness as f32 / 255.0 * (chars.len() - 1) as f32) as usize;
     chars.chars().nth(index).unwrap_or(' ')
+}
+#[derive(Copy, Clone)]
+pub struct Color {
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+}
+
+impl Color {
+    pub fn new(r: u8, g: u8, b: u8) -> Self {
+        Self { r, g, b }
+    }
 }

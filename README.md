@@ -2,7 +2,7 @@
 ![Version](https://img.shields.io/badge/Version-2.0.0-orange)
 # img-to-ascii
 
-🇫🇷 [Version française](#version-française) | 🇬🇧 [English version](#english-version)
+🇫🇷 [Version française](#-version-française) | 🇬🇧 [English version](#-english-version)
 
 ---
 
